@@ -1,0 +1,153 @@
+/* Estilo para el body */
+body {
+    /* El background se define en Tailwind en el HTML, pero lo dejamos por consistencia */
+    /* background-color: #dceee5; */
+    margin: 0;
+    padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+/* Estilo para los combobox (select) */
+.custom-select {
+    appearance: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23333' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 0.5rem center; /* Más pegado a la derecha */
+    background-size: 1em; /* Icono un poco más chico */
+    padding-right: 2rem; 
+    cursor: pointer;
+}
+
+/* Indicador LIVE */
+.live-indicator {
+    display: flex;
+    align-items: center;
+    font-weight: bold;
+    color: #D90429;
+    visibility: hidden; 
+    opacity: 0;
+    transition: opacity 0.3s ease-in-out;
+}
+
+.live-indicator-dot {
+    width: 8px; /* Punto un poco más chico */
+    height: 8px;
+    background-color: #D90429;
+    border-radius: 50%;
+    margin-right: 5px;
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+
+/* Estilos de Botones */
+.control-button {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 0.75rem; /* 12px, menos redondeado para ahorrar espacio */
+    background-color: #f3f4f6; 
+    box-shadow: 0 2px 4px -1px rgba(0, 0, 0, 0.1), 0 1px 2px -1px rgba(0, 0, 0, 0.06); /* Sombra más sutil */
+    transition: transform 0.1s ease-in-out;
+    outline: none;
+    -webkit-tap-highlight-color: transparent; 
+}
+
+.control-button:hover {
+    transform: scale(1.05);
+}
+
+.control-button:active,
+.control-button:focus-visible {
+    transform: scale(0.95);
+}
+
+.control-button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Modales */
+.modal-container {
+    transition: visibility 0.3s ease;
+}
+.modal-content {
+    transition: transform 0.3s ease, opacity 0.3s ease;
+}
+.modal-open {
+    visibility: visible;
+}
+.modal-open .modal-content {
+    transform: scale(1);
+    opacity: 1;
+}
+
+/* Controles de Velocidad */
+.speed-controls {
+    display: flex;
+    justify-content: space-between; 
+    gap: 0.25rem; /* Gap más pequeño */
+}
+
+.speed-button {
+    flex: 1; 
+    padding: 0.25rem; /* Padding muy compacto */
+    font-size: 0.875rem; /* 14px */
+    font-weight: 700; 
+    border-radius: 0.5rem; 
+    border: 1px solid #a7a7a7; /* Borde más fino */
+    color: #a7a7a7; 
+    background-color: #ffffff;
+    transition: all 0.2s ease;
+}
+
+.speed-button:hover {
+    background-color: #f0f0f0;
+}
+
+.speed-button.active {
+    border-color: #b36dff; 
+    background-color: #f4eaff; 
+    color: #b36dff; 
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.speed-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background-color: #f9f9f9;
+}
+
+/* Alerta Toast */
+.alert-toast {
+    position: fixed;
+    top: 10px; /* Más arriba */
+    right: 10px;
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    font-weight: 600; 
+    font-size: 0.875rem;
+    color: white;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    z-index: 100;
+    transform: translateX(100%);
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.4s cubic-bezier(0.68, -0.55, 0.27, 1.55);
+}
+
+.alert-toast.show {
+    transform: translateX(0);
+    opacity: 1;
+    visibility: visible;
+}
+
+.alert-toast.success { background-color: #28a745; }
+.alert-toast.error { background-color: #dc3545; }

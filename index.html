@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>App Control: Carrito IoT</title>
+    
+    <!-- **** NUEVO: Favicon **** -->
+    <!-- Ajusta 'href' si tu imagen tiene otro nombre o ruta -->
+    <link rel="icon" type="image/png" href="img/favicon.png">
+    
+    <!-- Cargamos Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Enlace a nuestra hoja de estilos personalizada -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<!-- Usamos h-screen y overflow-hidden para evitar scroll -->
+<body class="h-screen w-screen overflow-hidden bg-[#dceee5] flex flex-col">
+
+    <!-- Navbar: Compacto (py-2) -->
+    <nav class="bg-[#70c399] text-white py-2 px-4 shadow-md flex-none z-10">
+        <div class="container mx-auto flex justify-between items-center">
+            <h1 class="text-lg font-bold">App Control: Carrito IoT</h1>
+            <a href="monitoreo.html" class="text-sm font-semibold hover:underline">Monitoreo</a>
+        </div>
+    </nav>
+
+    <!-- Contenido Principal: flex-grow para usar el espacio restante -->
+    <main class="flex-grow w-full h-full p-2 lg:p-4 overflow-hidden relative">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-3 h-full">
+
+            <!-- Columna Izquierda (Controles): Flex column para distribuir -->
+            <div class="lg:col-span-1 flex flex-col gap-2 h-full justify-between overflow-y-auto pr-1">
+
+                <!-- Dispositivo (Más compacto) -->
+                <div id="control-dispositivo" class="bg-[#b36dff] p-2 rounded-xl shadow-md text-white">
+                    <label for="select-dispositivo" class="block text-xs font-medium mb-1">Dispositivo</label>
+                    <select id="select-dispositivo" class="custom-select w-full p-1.5 text-sm rounded-lg text-black font-semibold shadow-inner transition-all">
+                        <option value="1">Dispositivo 1</option>
+                    </select>
+                </div>
+
+                <!-- Velocidad (Más compacto) -->
+                <div class="bg-white p-2 rounded-xl shadow-md">
+                    <h3 class="text-xs font-medium text-gray-500 mb-1 text-center">Velocidad</h3>
+                    <div id="speed-control-container" class="speed-controls">
+                        <button id="btn-velocidad-1" class="speed-button active" data-velocidad="1">1</button>
+                        <button id="btn-velocidad-2" class="speed-button" data-velocidad="2">2</button>
+                        <button id="btn-velocidad-3" class="speed-button" data-velocidad="3">3</button>
+                    </div>
+                </div>
+
+                <!-- Último Movimiento (Flexible para ocupar espacio) -->
+                <div id="control-movimiento" class="bg-white p-3 rounded-xl shadow-md flex-1 flex flex-col justify-center">
+                    <h3 class="text-sm font-medium text-gray-500 mb-1">Último movimiento</h3>
+                    <!-- TEXTO AJUSTADO: De text-3xl a text-xl -->
+                    <p id="label-movimiento" class="text-xl font-bold text-gray-900 truncate">---</p>
+                </div>
+
+                <!-- Último Obstáculo (Flexible) -->
+                <div id="control-obstaculo" class="bg-[#f7f4c5] p-3 rounded-xl shadow-md flex-1 flex flex-col justify-center">
+                    <h3 class="text-sm font-medium text-gray-600 mb-1">Último obstáculo</h3>
+                    <!-- TEXTO AJUSTADO: De text-3xl a text-xl -->
+                    <p id="label-obstaculo" class="text-xl font-bold text-gray-900 truncate">Sin reportes</p>
+                </div>
+                
+                <!-- Secuencias -->
+                <div class="bg-[#70c399] p-2 rounded-xl shadow-md text-white">
+                    <label for="select-secuencia" class="block text-xs font-medium mb-1">Secuencias</label>
+                    <select id="select-secuencia" class="custom-select w-full p-1.5 text-sm rounded-lg text-black font-semibold shadow-inner transition-all">
+                        <option value="">Seleccionar...</option>
+                        <option value="grabar">Grabar secuencia</option>
+                        <option value="reproducir">Reproducir secuencia</option>
+                    </select>
+                </div>
+                
+                <!-- Controles de Grabación (Compactos) -->
+                <div id="recording-controls" class="bg-white p-2 rounded-xl shadow-md flex justify-around items-center hidden gap-1">
+                    <button id="btn-record-start" class="control-button py-1.5 px-2 text-xs font-semibold bg-green-500 text-white hover:bg-green-600 w-full">Grabar</button>
+                    <button id="btn-record-stop" class="control-button py-1.5 px-2 text-xs font-semibold bg-yellow-500 text-white hover:bg-yellow-600 w-full">Detener</button>
+                    <button id="btn-record-cancel" class="control-button py-1.5 px-2 text-xs font-semibold bg-red-500 text-white hover:bg-red-600 w-full">Cancelar</button>
+                </div>
+            </div>
+
+            <!-- Columna Derecha (Botones de Operación): Centrado absoluto -->
+            <div class="lg:col-span-2 bg-white rounded-3xl shadow-xl relative h-full flex items-center justify-center p-2 overflow-hidden">
+                
+                <!-- Indicador LIVE -->
+                <div id="live-indicator" class="live-indicator absolute top-3 right-4 z-20 text-sm">
+                    <span class="live-indicator-dot"></span>
+                    <span>LIVE</span>
+                </div>
+
+                <!-- Contenedor de los botones: Ajuste de escala para que quepan bien -->
+                <div class="flex items-center justify-center w-full h-full max-w-2xl mx-auto transition-transform">
+                    
+                    <!-- Botón Izquierdo -->
+                    <div class="flex justify-center px-1">
+                        <button id="btn-11" class="control-button w-20 h-20 lg:w-24 lg:h-24" title="Giro 360° izquierda">
+                            <img src="img/izquierda360.png" alt="Giro 360° izquierda" class="w-12 h-12 lg:w-16 lg:h-16 object-contain">
+                        </button>
+                    </div>
+
+                    <!-- Rejilla Central 3x3 -->
+                    <div class="grid grid-cols-3 gap-3 lg:gap-5">
+                        
+                        <!-- Fila 1 -->
+                        <div class="flex justify-center">
+                            <button id="btn-5" class="control-button w-16 h-16 lg:w-20 lg:h-20 bg-[#ffffff]" title="Vuelta adelante izquierda">
+                                <img src="img/adelante_izquierda.png" alt="Vuelta adelante izquierda" class="w-10 h-10 lg:w-12 lg:h-12 object-contain">
+                            </button>
+                        </div>
+                        <div class="flex justify-center">
+                            <button id="btn-1" class="control-button w-24 h-24 lg:w-28 lg:h-28 bg-[#ffffff]" title="Adelante">
+                                <img src="img/adelante.png" alt="Adelante" class="w-16 h-16 lg:w-20 lg:h-20 object-contain">
+                            </button>
+                        </div>
+                        <div class="flex justify-center">
+                            <button id="btn-4" class="control-button w-16 h-16 lg:w-20 lg:h-20 bg-[#ffffff]" title="Vuelta adelante derecha">
+                                <img src="img/adelante_derecha.png" alt="Vuelta adelante derecha" class="w-10 h-10 lg:w-12 lg:h-12 object-contain">
+                            </button>
+                        </div>
+
+                        <!-- Fila 2 -->
+                        <div class="flex justify-center">
+                             <button id="btn-9" class="control-button w-20 h-20 lg:w-24 lg:h-24 bg-[#ffffff]" title="Giro 90° izquierda">
+                                <img src="img/izquierda.png" alt="Giro 90° izquierda" class="w-12 h-12 lg:w-16 lg:h-16 object-contain">
+                            </button>
+                        </div>
+                        <div class="flex justify-center">
+                            <button id="btn-3" class="control-button w-20 h-20 lg:w-24 lg:h-24 bg-[#ffffff]" title="Detener">
+                                <img src="img/detener.png" alt="Detener" class="w-12 h-12 lg:w-16 lg:h-16 object-contain">
+                            </button>
+                        </div>
+                        <div class="flex justify-center">
+                            <button id="btn-8" class="control-button w-20 h-20 lg:w-24 lg:h-24 bg-[#ffffff]" title="Giro 90° derecha">
+                                <img src="img/derecha.png" alt="Giro 90° derecha" class="w-12 h-12 lg:w-16 lg:h-16 object-contain">
+                            </button>
+                        </div>
+
+                        <!-- Fila 3 -->
+                        <div class="flex justify-center">
+                            <button id="btn-7" class="control-button w-16 h-16 lg:w-20 lg:h-20 bg-[#ffffff]" title="Vuelta atrás izquierda">
+                                <img src="img/atras_izquierda.png" alt="Vuelta atrás izquierda" class="w-10 h-10 lg:w-12 lg:h-12 object-contain">
+                            </button>
+                        </div>
+                        <div class="flex justify-center">
+                            <button id="btn-2" class="control-button w-24 h-24 lg:w-28 lg:h-28 bg-[#ffffff]" title="Atrás">
+                                <img src="img/atras.png" alt="Atrás" class="w-16 h-16 lg:w-20 lg:h-20 object-contain">
+                            </button>
+                        </div>
+                        <div class="flex justify-center">
+                            <button id="btn-6" class="control-button w-16 h-16 lg:w-20 lg:h-20 bg-[#ffffff]" title="Vuelta atrás derecha">
+                                <img src="img/atras_derecha.png" alt="Vuelta atrás derecha" class="w-10 h-10 lg:w-12 lg:h-12 object-contain">
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Botón Derecho -->
+                    <div class="flex justify-center px-1">
+                        <button id="btn-10" class="control-button w-20 h-20 lg:w-24 lg:h-24" title="Giro 360° derecha">
+                            <img src="img/derecha360.png" alt="Giro 360° derecha" class="w-12 h-12 lg:w-16 lg:h-16 object-contain">
+                        </button>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer: Muy delgado -->
+    <footer class="bg-[#70c399] text-white p-1 text-center shadow-inner text-xs flex-none">
+        <p class="font-semibold">Daniela Navarro Ordoñez</p>
+    </footer>
+
+    <!-- Modal Reproducir (Ajustado) -->
+    <div id="modal-reproducir" class="modal-container fixed inset-0 z-50 flex items-center justify-center p-4 hidden">
+        <div class="modal-overlay absolute inset-0 bg-black opacity-50"></div>
+        <div class="modal-content bg-white w-full max-w-sm p-4 rounded-xl shadow-xl z-10 transform transition-all scale-95 opacity-0">
+            <h2 class="text-base font-bold text-gray-800 mb-3">Reproducir Secuencia</h2>
+            <div class="mb-3">
+                <label for="select-secuencia-api" class="block text-xs font-medium text-gray-700 mb-1">Seleccionar secuencia</label>
+                <select id="select-secuencia-api" class="custom-select w-full p-2 text-sm rounded-lg text-black font-semibold shadow-inner bg-gray-100 border border-gray-300">
+                    <option value="">Cargando...</option>
+                </select>
+            </div>
+            <div class="flex flex-col gap-2">
+                <div class="flex w-full gap-2">
+                    <button id="btn-modal-reproducir" class="w-1/2 p-2 bg-green-500 text-white rounded-lg text-xs font-semibold shadow hover:bg-green-600 active:scale-95">Reproducir</button>
+                    <button id="btn-modal-pausar" class="w-1/2 p-2 bg-red-500 text-white rounded-lg text-xs font-semibold shadow hover:bg-red-600 active:scale-95" disabled>Pausar</button>
+                </div>
+                <div class="flex w-full gap-2">
+                    <button id="btn-modal-obstaculo" class="w-1/2 p-2 bg-yellow-500 text-white rounded-lg text-xs font-semibold shadow hover:bg-yellow-600 active:scale-95">Obstáculo</button>
+                    <button id="btn-modal-cancelar" class="w-full p-2 bg-gray-400 text-white rounded-lg text-xs font-semibold shadow hover:bg-gray-500 active:scale-95">Cancelar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Grabar (Ajustado) -->
+    <div id="modal-grabar-nombre" class="modal-container fixed inset-0 z-50 flex items-center justify-center p-4 hidden">
+        <div class="modal-overlay absolute inset-0 bg-black opacity-50"></div>
+        <div class="modal-content bg-white w-full max-w-sm p-4 rounded-xl shadow-xl z-10 transform transition-all scale-95 opacity-0">
+            <h2 class="text-base font-bold text-gray-800 mb-3">Grabar Secuencia</h2>
+            <div class="mb-3">
+                <label for="input-nombre-secuencia" class="block text-xs font-medium text-gray-700 mb-1">Nombre</label>
+                <input type="text" id="input-nombre-secuencia" class="w-full p-2 text-sm rounded-lg text-black font-semibold shadow-inner bg-gray-100 border border-gray-300" placeholder="Ej: Recorrido A">
+            </div>
+            <div class="flex justify-end gap-2">
+                <button id="btn-modal-grabar-cancelar" class="p-2 bg-gray-300 text-gray-800 rounded-lg text-xs font-semibold shadow hover:bg-gray-400 active:scale-95">Cancelar</button>
+                <button id="btn-modal-grabar-aceptar" class="p-2 bg-green-500 text-white rounded-lg text-xs font-semibold shadow hover:bg-green-600 active:scale-95">Aceptar</button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="alert-box" class="alert-toast success">¡Listo!</div>
+
+    <script src="script.js" defer></script>
+</body>
+</html>
