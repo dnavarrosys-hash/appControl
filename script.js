@@ -1,5 +1,4 @@
 // --- CONFIGURACIÓN DE API ---
-// Ajusta la IP si cambia en AWS
 const API_URL = "http://54.88.143.116:5500/api"; 
 const WEBSOCKET_URL = "ws://54.88.143.116:5500/ws"; 
 const DISPOSITIVO_ID = 1; 
@@ -17,7 +16,7 @@ const btnRecordStop = document.getElementById('btn-record-stop');
 const btnRecordCancel = document.getElementById('btn-record-cancel');
 const liveIndicator = document.getElementById('live-indicator');
 
-// Modal de Reproducción
+// Modal de Reproducción (Botones actualizados)
 const modalReproducir = document.getElementById('modal-reproducir');
 const selectSecuenciaApi = document.getElementById('select-secuencia-api');
 const btnModalReproducir = document.getElementById('btn-modal-reproducir');
@@ -35,7 +34,7 @@ const speedControlContainer = document.getElementById('speed-control-container')
 const speedButtons = document.querySelectorAll('.speed-button');
 const alertBox = document.getElementById('alert-box');
 
-// --- DATOS DE MAPEO ---
+// --- DATOS DE MAPEO (Front-end) ---
 const tablaOperaciones = {
     1: "Adelante", 2: "Atrás", 3: "Detener", 4: "Vuelta adelante derecha",
     5: "Vuelta adelante izquierda", 6: "Vuelta atrás derecha", 7: "Vuelta atrás izquierda",
@@ -52,12 +51,10 @@ let reproduccionInterval = null;
 let reproduccionOrdenActual = 0; 
 let reproduccionSecuenciaId = null; 
 
-let velocidadActual = 1; 
-let isManiobraRunning = false; 
+let velocidadActual = 1; // Estado de Velocidad (default en 1)
 
-// --- FUNCIONES DE UI ---
+// --- FUNCIONES DE LÓGICA DE UI ---
 function actualizarMovimiento(movimiento) {
-    // Aquí se verán los pasos de la evasión ("Giro 90", etc.)
     labelMovimiento.textContent = movimiento;
 }
 
@@ -71,9 +68,18 @@ function mostrarLive(mostrar) {
 }
 
 function setControlesDeshabilitados(deshabilitar) {
-    // Solo bloqueamos el selector de dispositivo y secuencia, NO la velocidad
     selectDispositivo.disabled = deshabilitar;
-    selectSecuencia.disabled = deshabilitar;
+}
+
+/**
+ * Habilita o deshabilita los botones de velocidad.
+ * @param {boolean} deshabilitar - true para deshabilitar, false para habilitar.
+ */
+function setSpeedControlsDisabled(deshabilitar) {
+    console.log(`Controles de velocidad deshabilitados: ${deshabilitar}`);
+    speedButtons.forEach(btn => {
+        btn.disabled = deshabilitar;
+    });
 }
 
 function mostrarModal(modal, mostrar) {
@@ -86,10 +92,12 @@ function mostrarModal(modal, mostrar) {
     }
 }
 
+// Alerta "Toast"
 function mostrarAlerta(mensaje, tipo = 'success', duracion = 3000) {
     alertBox.textContent = mensaje;
-    alertBox.className = `alert-toast ${tipo}`; 
+    alertBox.className = `alert-toast ${tipo}`; // Resetea clases y aplica tipo
     alertBox.classList.add('show');
+    
     setTimeout(() => {
         alertBox.classList.remove('show');
     }, duracion);
@@ -104,6 +112,7 @@ function resetearModoGrabacion() {
     nombreSecuenciaActual = null;
     
     setControlesDeshabilitados(false);
+    setSpeedControlsDisabled(false); // Habilitar velocidad
     
     recordingControls.classList.add('hidden');
     mostrarLive(false);
@@ -118,6 +127,7 @@ function pausarSecuencia() {
         clearTimeout(reproduccionInterval); 
         reproduccionInterval = null;
         modoReproduccion = false; 
+        console.log(`Secuencia pausada en el paso: ${reproduccionOrdenActual}`);
         actualizarMovimiento(`Pausado (paso ${reproduccionOrdenActual})`);
         
         btnModalReproducir.disabled = false; 
@@ -129,6 +139,7 @@ function pausarSecuencia() {
 function reanudarSecuencia() {
     if (reproduccionSecuenciaId !== null) {
         modoReproduccion = true; 
+        console.log(`Reanudando secuencia desde el paso: ${reproduccionOrdenActual}`);
         actualizarMovimiento(`Reanudando desde paso ${reproduccionOrdenActual}...`);
         
         btnModalReproducir.disabled = true;
@@ -142,6 +153,7 @@ function reanudarSecuencia() {
 function resetearSecuenciaPorCompleto() {
     console.log("Reseteando secuencia por completo");
     pausarSecuencia(); 
+    
     modoReproduccion = false; 
     reproduccionOrdenActual = 0;
     reproduccionSecuenciaId = null;
@@ -175,12 +187,17 @@ async function apiEnviarMovimiento(clave, texto) {
             })
         });
 
-        if (!response.ok) throw new Error(`Error ${response.status}`);
+        if (!response.ok) throw new Error(`Error ${response.status} de la API`);
+        const result = await response.json();
+        console.log("API: Movimiento registrado", result);
+        
         if (modoGrabacion) {
             movimientosGrabados.push(clave);
+            console.log("Movimiento grabado:", movimientosGrabados);
         }
+
     } catch (error) {
-        console.error("Error:", error);
+        console.error("Error en apiEnviarMovimiento:", error);
         actualizarMovimiento("Error de conexión");
     }
 }
@@ -198,16 +215,20 @@ async function apiGetUltimoObstaculo() {
         const data = await response.json();
         actualizarObstaculo(data.status_texto || 'Sin datos');
     } catch (error) {
+        console.error("Error apiGetUltimoObstaculo:", error);
         actualizarObstaculo('Error al consultar');
     }
 }
 
+
 async function apiObtenerSecuencias() {
+    console.log("API: Obteniendo historial de secuencias");
     selectSecuenciaApi.innerHTML = '<option value="">Cargando...</option>';
     try {
         const response = await fetch(`${API_URL}/secuencia/historial/${DISPOSITIVO_ID}`);
-        if (!response.ok) throw new Error(`Error ${response.status}`);
+        if (!response.ok) throw new Error(`Error ${response.status} de la API`);
         const secuencias = await response.json();
+        console.log("API: Secuencias recibidas", secuencias);
         
         selectSecuenciaApi.innerHTML = '<option value="">Seleccione una...</option>';
         if (secuencias && secuencias.length > 0) {
@@ -219,11 +240,13 @@ async function apiObtenerSecuencias() {
             selectSecuenciaApi.innerHTML = '<option value="">No hay secuencias</option>';
         }
     } catch (error) {
+        console.error("Error en apiObtenerSecuencias:", error);
         selectSecuenciaApi.innerHTML = '<option value="">Error al cargar</option>';
     }
 }
 
 async function apiCrearSecuencia() {
+    console.log(`API: Creando secuencia "${nombreSecuenciaActual}" con ${movimientosGrabados.length} pasos`);
     try {
         const response = await fetch(`${API_URL}/secuencia`, {
             method: 'POST',
@@ -234,11 +257,13 @@ async function apiCrearSecuencia() {
                 movimientos: movimientosGrabados
             })
         });
-        if (!response.ok) throw new Error(`Error ${response.status}`);
-        
+        if (!response.ok) throw new Error(`Error ${response.status} de la API`);
+        const result = await response.json();
+        console.log("API: Secuencia creada", result);
         actualizarMovimiento(`Secuencia "${nombreSecuenciaActual}" guardada.`);
         mostrarAlerta(`Secuencia "${nombreSecuenciaActual}" guardada.`, 'success');
     } catch (error) {
+        console.error("Error en apiCrearSecuencia:", error);
         actualizarMovimiento("Error al guardar secuencia");
         mostrarAlerta("Error al guardar secuencia", 'error');
     }
@@ -247,6 +272,8 @@ async function apiCrearSecuencia() {
 async function apiEjecutarSiguientePaso() {
     if (!modoReproduccion) return; 
 
+    console.log(`API: Ejecutando paso ${reproduccionOrdenActual} de secuencia ${reproduccionSecuenciaId}`);
+    
     try {
         const response = await fetch(`${API_URL}/secuencia/repetir`, {
             method: 'POST',
@@ -260,135 +287,90 @@ async function apiEjecutarSiguientePaso() {
         });
 
         if (!response.ok) {
+            // Si la respuesta NO fue OK (ej. 500), el catch la tomará
             const errorData = await response.json();
             throw new Error(errorData.error || `Error ${response.status}`);
         }
         
         const result = await response.json();
 
-        // Si la secuencia terminó
+        // Comprobar si la secuencia terminó (Respuesta 200 OK con status "completada")
         if (result.status === "secuencia completada") {
+            console.log("API: Secuencia completada");
             actualizarMovimiento("Secuencia completada");
+            
             mostrarAlerta("¡Secuencia completada!", 'success');
             resetearSecuenciaPorCompleto(); 
             mostrarModal(modalReproducir, false); 
         } 
-        // Si se ejecutó un paso
+        // Comprobar si ejecutó un paso (Respuesta 200 OK con "orden_ejecutado")
         else if (result.orden_ejecutado) {
+            console.log("API: Paso ejecutado", result);
             actualizarMovimiento(result.descripcion);
             reproduccionOrdenActual = result.orden_ejecutado; 
+
             reproduccionInterval = setTimeout(apiEjecutarSiguientePaso, 1500); 
+        }
+        else {
+            // Respuesta 200 OK, pero JSON inesperado.
+             throw new Error("Respuesta inesperada de la API al ejecutar paso.");
         }
         
     } catch (error) {
+        console.error("Error en apiEjecutarSiguientePaso:", error);
         actualizarMovimiento("Error en reproducción");
         mostrarAlerta(`Error: ${error.message}`, 'error');
         resetearSecuenciaPorCompleto();
     }
 }
 
-/**
- * Llama a la API de liberación (maniobra) automáticamente.
- * NO cambiamos el texto del obstáculo aquí (se queda con el nombre real).
- */
-async function apiEjecutarManiobraAutomatica(obstaculoClave) {
-    if (isManiobraRunning) return; 
-    isManiobraRunning = true;
-    
-    // Bloqueamos selector de dispositivo pero NO la velocidad
-    setControlesDeshabilitados(true); 
-    
-    mostrarAlerta(`¡Obstáculo detectado! Iniciando maniobra automática.`, 'error', 4000);
-
-    try {
-        // 1. Llamar a la API que ejecuta la maniobra en el backend
-        const response = await fetch(`${API_URL}/obstaculo/liberar`, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({
-                dispositivo_id: DISPOSITIVO_ID,
-                obstaculo_clave: obstaculoClave
-            })
-        });
-
-        if (!response.ok) throw new Error(`Error ${response.status} al iniciar maniobra.`);
-        
-        // El backend ahora empezará a mandar PUSH "nuevo_movimiento" por cada paso.
-        // Nosotros solo observamos.
-
-    } catch (error) {
-        console.error("Error maniobra:", error);
-        mostrarAlerta("Error al iniciar maniobra.", 'error');
-    } finally {
-        // Liberamos los controles al terminar la solicitud HTTP
-        // (aunque la maniobra siga en el backend, el usuario puede retomar control si quiere)
-        setControlesDeshabilitados(false); 
-    }
-}
-
-
-// --- WEBSOCKET (PUSH) ---
+// --- LÓGICA DE WEBSOCKET NATIVO (PUSH) ---
 function connectWebSocket() {
-    console.log("Conectando WebSocket:", WEBSOCKET_URL);
+    console.log("App Control: Intentando conectar a WebSocket en:", WEBSOCKET_URL);
     const ws = new WebSocket(WEBSOCKET_URL);
 
     ws.onopen = () => {
-        console.log("¡WebSocket Conectado!");
-        if (!modoGrabacion && !modoReproduccion) { 
-             setControlesDeshabilitados(false); 
-        }
+        console.log("App Control: ¡Conectado a WebSocket Nativo!");
     };
 
     ws.onclose = (event) => {
-        console.warn("WS Desconectado. Razón:", event.code);
-        setControlesDeshabilitados(true); // Bloquear si no hay conexión
-        setTimeout(connectWebSocket, 3000);
+        console.warn("App Control: Desconectado de WebSocket. Razón:", event.code, event.reason);
+        setTimeout(connectWebSocket, 3000); // Reconectar
     };
 
     ws.onerror = (error) => {
-        console.error("WS Error:", error);
+        console.error("App Control: Error de WebSocket:", error);
     };
 
-    // ¡AQUÍ LLEGAN LOS DATOS!
+    // ¡Manejador de PUSH!
     ws.onmessage = (evento) => {
         let data;
         try {
             data = JSON.parse(evento.data);
-        } catch (error) { return; }
+        } catch (error) {
+            console.error("Error al parsear JSON de WebSocket:", error);
+            return;
+        }
 
-        console.log("PUSH:", data);
+        console.log("App Control PUSH Recibido:", data);
 
         switch (data.type) {
-            // CASO 1: Movimiento (Manual, Secuencia o Maniobra de Evasión)
             case "nuevo_movimiento":
             case "paso_secuencia":
                 if (data.status_texto || data.descripcion) {
-                    // Actualizamos "Último Movimiento" en pantalla
                     actualizarMovimiento(data.status_texto || data.descripcion);
-                }
-                
-                // Detectar fin de maniobra (cuando llega "Detener" - clave 3)
-                if (data.status_clave === 3 && isManiobraRunning) {
-                     isManiobraRunning = false;
-                     console.log("Maniobra finalizada (Stop recibido).");
                 }
                 break;
 
-            // CASO 2: Obstáculo detectado por el carrito
             case "nuevo_obstaculo":
                 if (data.status_texto) {
-                    // 1. Poner el nombre real del obstáculo en pantalla
                     actualizarObstaculo(data.status_texto);
-                    
-                    // 2. Si hay secuencia corriendo, PAUSARLA
                     if (modoReproduccion && reproduccionInterval) {
+                        console.log("Obstáculo PUSH recibido: Pausando reproducción de secuencia.");
                         pausarSecuencia();
+                        actualizarMovimiento("Obstáculo detectado! Secuencia pausada.");
                         mostrarAlerta("¡Obstáculo detectado! Secuencia pausada.", 'error');
                     }
-
-                    // 3. ¡DISPARAR LA MANIOBRA DE EVASIÓN!
-                    // Esto llama al backend, que luego mandará los PUSH de movimiento
-                    apiEjecutarManiobraAutomatica(data.status_clave);
                 }
                 break;
         }
@@ -396,27 +378,23 @@ function connectWebSocket() {
 }
 
 
-// --- EVENT LISTENERS ---
+// --- EVENT LISTENERS PRINCIPALES ---
 
 selectSecuencia.addEventListener('change', (e) => {
     const valor = e.target.value;
-    
-    setControlesDeshabilitados(false); 
-    resetearModoGrabacion();
-
     if (valor === 'grabar') {
-        setControlesDeshabilitados(true); 
         inputNombreSecuencia.value = ""; 
         mostrarModal(modalGrabarNombre, true);
-        
     } else if (valor === 'reproducir') {
-        setControlesDeshabilitados(true);
         resetearSecuenciaPorCompleto();
         mostrarModal(modalReproducir, true);
         apiObtenerSecuencias(); 
-    } 
+    } else {
+        resetearModoGrabacion();
+    }
 });
 
+// Botones de Movimiento
 document.querySelector('.lg\\:col-span-2').addEventListener('click', (e) => {
     const boton = e.target.closest('.control-button');
     if (!boton || boton.disabled) return;
@@ -429,62 +407,83 @@ document.querySelector('.lg\\:col-span-2').addEventListener('click', (e) => {
     }
 });
 
-// Selector de Velocidad (SIEMPRE ACTIVO)
+// Listener de Velocidad
 speedControlContainer.addEventListener('click', (e) => {
     const boton = e.target.closest('.speed-button');
-    if (!boton) return;
+    if (!boton || boton.disabled) return; 
 
     const velocidadSeleccionada = parseInt(boton.dataset.velocidad, 10);
     velocidadActual = velocidadSeleccionada;
     console.log(`Velocidad cambiada a: ${velocidadActual}`);
 
-    speedButtons.forEach(btn => btn.classList.remove('active'));
+    speedButtons.forEach(btn => {
+        btn.classList.remove('active');
+    });
     boton.classList.add('active');
 });
 
-// Modales y Grabación
+// --- LISTENERS MODAL GRABAR NOMBRE ---
 btnModalGrabarAceptar.addEventListener('click', () => {
     const nombre = inputNombreSecuencia.value.trim();
-    if (nombre === "") return;
+    if (nombre === "") {
+        inputNombreSecuencia.classList.add('border-red-500', 'border-2');
+        setTimeout(() => inputNombreSecuencia.classList.remove('border-red-500', 'border-2'), 2000);
+        return;
+    }
     
     modoGrabacion = true;
     nombreSecuenciaActual = nombre;
     movimientosGrabados = [];
     
+    setControlesDeshabilitados(true);
+    setSpeedControlsDisabled(true); // <-- ¡MODIFICACIÓN! Deshabilitar velocidad
+    
     recordingControls.classList.remove('hidden');
-    mostrarLive(true); 
+    mostrarLive(false); 
     mostrarModal(modalGrabarNombre, false);
     actualizarMovimiento(`Listo para grabar "${nombre}"`);
 });
 
 btnModalGrabarCancelar.addEventListener('click', () => {
     mostrarModal(modalGrabarNombre, false);
-    resetearModoGrabacion(); 
+    resetearModoGrabacion(); // Ya habilita la velocidad
 });
 
+// --- LISTENERS CONTROLES DE GRABACIÓN ---
 btnRecordStart.addEventListener('click', () => {
     mostrarLive(true);
+    console.log("Grabación iniciada (LIVE ON)");
 });
 
 btnRecordStop.addEventListener('click', async () => {
     mostrarLive(false);
+    console.log("Grabación detenida. Guardando...");
+    
     if (movimientosGrabados.length > 0 && nombreSecuenciaActual) {
         await apiCrearSecuencia();
+    } else {
+        console.log("No se grabaron movimientos. No se guardó nada.");
+        actualizarMovimiento("Grabación cancelada (sin pasos).");
     }
-    resetearModoGrabacion(); 
+    resetearModoGrabacion(); // Ya habilita la velocidad
 });
 
 btnRecordCancel.addEventListener('click', () => {
-    resetearModoGrabacion(); 
+    resetearModoGrabacion(); // Ya habilita la velocidad
     actualizarMovimiento("Grabación cancelada.");
 });
 
-// Modal Reproducción
+// --- LISTENERS MODAL REPRODUCCIÓN ---
+
 btnModalReproducir.addEventListener('click', () => {
     if (modoReproduccion) return; 
     if (reproduccionOrdenActual === 0) {
         const seqId = selectSecuenciaApi.value;
-        if (!seqId) return;
+        if (!seqId) {
+            selectSecuenciaApi.classList.add('border-red-500', 'border-2');
+            setTimeout(() => selectSecuenciaApi.classList.remove('border-red-500', 'border-2'), 2000);
+            return;
+        }
         reproduccionSecuenciaId = parseInt(seqId, 10);
     }
     reanudarSecuencia();
@@ -501,7 +500,7 @@ btnModalCancelar.addEventListener('click', () => {
     selectSecuencia.value = ""; 
 });
 
-// Cerrar modales
+// Cerrar modales al hacer clic en el overlay
 document.querySelectorAll('.modal-container').forEach(modal => {
     modal.addEventListener('click', (e) => {
         if (e.target.classList.contains('modal-overlay')) {
@@ -511,15 +510,17 @@ document.querySelectorAll('.modal-container').forEach(modal => {
                 selectSecuencia.value = "";
             } else if (modal.id === 'modal-grabar-nombre') {
                 mostrarModal(modalGrabarNombre, false);
-                resetearModoGrabacion(); 
+                resetearModoGrabacion(); // Ya habilita la velocidad
             }
         }
     });
 });
 
-// --- INIT ---
+// --- EJECUTAR AL INICIAR ---
 (function init() {
+    // 1. Cargar el estado inicial de la app (PULL)
     apiGetUltimoObstaculo(); 
+    
+    // 2. Iniciar la conexión WebSocket para PUSH
     connectWebSocket();
-    setControlesDeshabilitados(true); // Bloqueo inicial hasta conexión
 })();
